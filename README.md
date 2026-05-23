@@ -1,312 +1,246 @@
-Dashboard analytics improvements
-# Updating my ReadMe file
+# 🚀 SprintFlow AI
 
-# Starter Agent for Slack (Bolt for JavaScript and Claude Agent SDK)
+AI-powered engineering sprint intelligence inside Slack.
 
-A minimal starter template for building AI-powered Slack agents with [Bolt for JavaScript](https://docs.slack.dev/tools/bolt-js/) and the [Claude Agent SDK](https://platform.claude.com/docs/en/agent-sdk/overview) using models from [Anthropic](https://www.anthropic.com). Works with the [Slack MCP Server](https://github.com/slackapi/slack-mcp-server) to search messages, read channels, send messages, and manage canvases — all from within your agent.
+SprintFlow AI helps engineering teams summarize sprint activity, detect delivery risks, analyze GitHub engineering activity, and extract actionable operational insights directly within Slack workflows.
 
-## App Overview
+The platform combines Slack-native interactions, AI-powered reasoning, GitHub analytics, and contextual thread summarization to improve sprint visibility and engineering coordination.
 
-The starter agent interacts with users through four entry points:
+---
 
-* **App Home** — Displays a welcome message with instructions on how to interact.
-* **Direct Messages** — Users message the agent directly. It responds in-thread, maintaining context across follow-ups.
-* **Channel @mentions** — Mention the agent in any channel to get a response without leaving the conversation.
-* **Assistant Panel** — Users click _Add Agent_ in Slack, select the agent, and pick from suggested prompts or type a message.
+# ✨ Features
 
-The template also includes one example tool (emoji reactions). Add your own tools to customize it for your use case.
+## 🧠 AI Sprint Summaries
 
-### Slack MCP Server
+Generate structured sprint updates including:
 
-When connected to the [Slack MCP Server](https://github.com/slackapi/slack-mcp-server), the agent can search messages and files, read channel history and threads, send and schedule messages, and create and update canvases. When deployed with OAuth (HTTP mode), the agent automatically connects to the Slack MCP Server using the user's token.
+- Completed work
+- Active tasks
+- Blockers
+- Next steps
+- AI-generated insights
+- Sprint health indicators
 
-## Setup
+---
 
-Before getting started, make sure you have a development workspace where you have permissions to install apps.
+## 📊 GitHub Engineering Analytics
 
-### Developer Program
+Analyze real engineering activity directly from GitHub:
 
-Join the [Slack Developer Program](https://api.slack.com/developer-program) for exclusive access to sandbox environments for building and testing your apps, tooling, and resources created to help you build and grow.
+- Pull Requests
+- Open Issues
+- Commit activity
+- Engineering momentum
+- Repository workload trends
 
-### Create the Slack app
+---
 
-<details><summary><strong>Using Slack CLI</strong></summary>
+## ⚠️ Dynamic Risk Detection
 
-Install the latest version of the Slack CLI for your operating system:
+Automatically identify sprint delivery risks such as:
 
-* [Slack CLI for macOS & Linux](https://docs.slack.dev/tools/slack-cli/guides/installing-the-slack-cli-for-mac-and-linux/)
-* [Slack CLI for Windows](https://docs.slack.dev/tools/slack-cli/guides/installing-the-slack-cli-for-windows/)
+- Review bottlenecks
+- Elevated issue backlog
+- Reduced engineering momentum
+- Sprint execution concerns
 
-You'll also need to log in if this is your first time using the Slack CLI.
+---
 
-```sh
-slack login
+## 📝 AI Thread Summarization
+
+Summarize Slack engineering discussions into:
+
+- Key decisions
+- Risks/blockers
+- Action items
+- Operational summaries
+
+---
+
+## 🎯 Slack-Native Workflow
+
+Built directly inside Slack using:
+
+- Slash commands
+- Interactive buttons
+- Thread-aware workflows
+- Block Kit UI
+- Real-time engineering context
+
+---
+
+# 🏗️ Architecture
+
+```text
+Slack Workspace
+      ↓
+Slack Bolt SDK (Node.js)
+      ↓
+SprintFlow AI Engine
+      ↓
+Groq LLM API + GitHub REST API
+      ↓
+Sprint Intelligence Layer
+      ↓
+Insights • Risks • Analytics • Summaries
 ```
 
-#### Initializing the project
+---
 
-```sh
-slack create my-starter-agent --template slack-samples/bolt-js-starter-agent --subdir claude-agent-sdk
-cd my-starter-agent
+# 🛠️ Tech Stack
+
+- Slack Bolt SDK
+- Node.js
+- Groq API (Llama 3.3 70B)
+- GitHub REST API
+- Axios
+- Block Kit UI
+- Slack CLI
+
+---
+
+# 🚀 Core Workflow
+
+## `/daily-summary`
+
+Generates:
+
+- Sprint summary
+- Engineering insights
+- Sprint health score
+- Dynamic GitHub analytics
+- Actionable operational updates
+
+---
+
+# 📸 Screenshots
+
+## 🧠 Sprint Summary Dashboard
+
+![Sprint Summary](./screenshots/sprint-summary.png)
+
+Shows:
+- AI-generated sprint summary
+- Sprint health indicators
+- AI insights
+- Interactive Slack workflows
+
+---
+
+## 📊 Detailed Sprint Analytics
+
+![Sprint Analytics](./screenshots/sprint-analytics.png)
+
+Shows:
+- Pull request analytics
+- Issue tracking
+- Commit activity
+- Engineering insights
+
+---
+
+## ⚠️ Dynamic Risk Detection
+
+![Risk Detection](./screenshots/risk-detection.png)
+
+Shows:
+- Delivery risk analysis
+- Sprint blockers
+- Engineering workload concerns
+
+---
+
+## 📝 AI Thread Summarization
+
+![Thread Summary](./screenshots/thread-summary.png)
+
+Shows:
+- Key decisions
+- Risks/blockers
+- Action items
+- AI operational summaries
+
+---
+
+# ⚙️ Setup Instructions
+
+## 1. Clone Repository
+
+```bash
+git clone https://github.com/Atul-8115/Sprintflow-ai-demo.git
 ```
 
-</details>
+---
 
-<details><summary><strong>Using App Settings</strong></summary>
+## 2. Install Dependencies
 
-#### Create Your Slack App
-
-1. Open [https://api.slack.com/apps/new](https://api.slack.com/apps/new) and choose "From an app manifest"
-2. Choose the workspace you want to install the application to
-3. Copy the contents of [manifest.json](./manifest.json) into the text box that says `*Paste your manifest code here*` (within the JSON tab) and click _Next_
-4. Review the configuration and click _Create_
-5. Click _Install to Workspace_ and _Allow_ on the screen that follows. You'll then be redirected to the App Configuration dashboard.
-
-#### Environment Variables
-
-Before you can run the app, you'll need to store some environment variables.
-
-1. Rename `.env.sample` to `.env`.
-2. Open your apps setting page from [this list](https://api.slack.com/apps), click _OAuth & Permissions_ in the left hand menu, then copy the _Bot User OAuth Token_ into your `.env` file under `SLACK_BOT_TOKEN`.
-
-```sh
-SLACK_BOT_TOKEN=YOUR_SLACK_BOT_TOKEN
-```
-
-3. Click _Basic Information_ from the left hand menu and follow the steps in the _App-Level Tokens_ section to create an app-level token with the `connections:write` scope. Copy that token into your `.env` as `SLACK_APP_TOKEN`.
-
-```sh
-SLACK_APP_TOKEN=YOUR_SLACK_APP_TOKEN
-```
-
-#### Initializing the project
-
-```sh
-git clone https://github.com/slack-samples/bolt-js-starter-agent.git my-starter-agent
-cd my-starter-agent/claude-agent-sdk
-```
-
-</details>
-
-#### Install dependencies
-
-```sh
+```bash
 npm install
 ```
 
-## Providers
+---
 
-### Anthropic Setup
+## 3. Configure Environment Variables
 
-This app uses Claude through the Claude Agent SDK.
+Create `.env`
 
-1. Create an API key from your [Anthropic dashboard](https://console.anthropic.com/settings/keys).
-2. Rename `.env.sample` to `.env`.
-3. Save the Anthropic API key to `.env`:
-
-```sh
-ANTHROPIC_API_KEY=YOUR_ANTHROPIC_API_KEY
+```env
+SLACK_BOT_TOKEN=
+SLACK_APP_TOKEN=
+GROQ_API_KEY=
+GITHUB_TOKEN=
+GITHUB_OWNER=
+GITHUB_REPO=
 ```
 
-## Development
+---
 
-### Starting the app
+## 4. Run Application
 
-<details><summary><strong>Using the Slack CLI</strong></summary>
-
-#### Slack CLI
-
-```sh
+```bash
 slack run
 ```
 
-</details>
+---
 
-<details><summary><strong>Using the Terminal</strong></summary>
+# 💡 Problem Statement
 
-#### Terminal
+Engineering teams often lose visibility across:
 
-```sh
-npm start
-```
+- Slack discussions
+- GitHub activity
+- Sprint blockers
+- Deployment risks
+- Operational updates
 
-</details>
+SprintFlow AI centralizes engineering intelligence directly inside Slack to improve sprint visibility, operational awareness, and team coordination.
 
-<details><summary><strong>Using OAuth HTTP Server (with ngrok)</strong></summary>
+---
 
-#### OAuth HTTP Server
+# 🎥 Demo Highlights
 
-This mode uses an HTTP server instead of Socket Mode, which is required for OAuth-based distribution.
+SprintFlow AI demonstrates:
 
-1. Install [ngrok](https://ngrok.com/download) and start a tunnel:
+- AI-powered sprint summarization
+- Context-aware Slack thread intelligence
+- Dynamic engineering risk detection
+- GitHub activity analysis
+- Operational insight generation
+- Slack-native engineering workflows
 
-```sh
-ngrok http 3000
-```
+---
 
-2. Copy the `https://*.ngrok-free.app` URL from the ngrok output.
+# 🔮 Future Improvements
 
-<details><summary><strong>Using Slack CLI</strong></summary>
+- Jira integration
+- Deployment analytics
+- Predictive sprint risk scoring
+- Automated standup generation
+- Multi-repository support
+- Team performance insights
 
-#### Slack CLI
+---
 
-3. Update `manifest.json` for HTTP mode:
-   - Set `socket_mode_enabled` to `false`
-   - Replace `ngrok-free.app` with your ngrok domain (e.g. `YOUR_NGROK_SUBDOMAIN.ngrok-free.app`)
+# 🏆 Hackathon Submission
 
-4. Create a new local dev app:
-
-```sh
-slack install -E local
-```
-
-5. _(Slack CLI < v4.1.0 only)_ Enable MCP for your app:
-   - Run `slack app settings` to open your app's settings
-   - Navigate to **Agents & AI Apps** in the left-side navigation
-   - Toggle **Model Context Protocol** on
-
-6. Update your `.env` OAuth environment variables:
-   - Run `slack app settings` to open App Settings
-   - Copy **Client ID**, **Client Secret**, and **Signing Secret**
-   - Update `SLACK_REDIRECT_URI` in `.env` with your ngrok domain
-
-```sh
-SLACK_CLIENT_ID=YOUR_CLIENT_ID
-SLACK_CLIENT_SECRET=YOUR_CLIENT_SECRET
-SLACK_REDIRECT_URI=https://YOUR_NGROK_SUBDOMAIN.ngrok-free.app/slack/oauth_redirect
-SLACK_SIGNING_SECRET=YOUR_SIGNING_SECRET
-```
-
-7. Start the app:
-
-```sh
-slack run app-oauth.js
-```
-
-8. Click the install URL printed in the terminal to install the app to your workspace via OAuth.
-
-</details>
-
-<details><summary><strong>Using the Terminal</strong></summary>
-
-#### Terminal
-
-3. Create your Slack app at [api.slack.com/apps/new](https://api.slack.com/apps/new) using [`manifest.json`](./manifest.json). Before pasting the manifest, set `socket_mode_enabled` to `false` and replace `ngrok-free.app` with your ngrok domain.
-
-4. Install the app to your workspace and copy the following values into your `.env`:
-   - **Signing Secret** — from _Basic Information_
-   - **Bot User OAuth Token** — from _OAuth & Permissions_
-   - **Client ID** and **Client Secret** — from _Basic Information_
-
-```sh
-SLACK_SIGNING_SECRET=YOUR_SIGNING_SECRET
-SLACK_BOT_TOKEN=xoxb-YOUR_BOT_TOKEN
-SLACK_CLIENT_ID=YOUR_CLIENT_ID
-SLACK_CLIENT_SECRET=YOUR_CLIENT_SECRET
-SLACK_REDIRECT_URI=https://YOUR_NGROK_SUBDOMAIN.ngrok-free.app/slack/oauth_redirect
-```
-
-Replace `your-subdomain` in `SLACK_REDIRECT_URI` with your ngrok subdomain.
-
-5. Start the app:
-
-```sh
-node app-oauth.js
-```
-
-6. Click the install URL printed in the terminal to install the app to your workspace via OAuth.
-
-</details>
-
-> **Note:** Each time ngrok restarts, it generates a new URL. You'll need to update the ngrok domain in `manifest.json`, `SLACK_REDIRECT_URI` in your `.env`, and re-install the app.
-
-</details>
-
-### Using the App
-
-Once the agent is running, there are several ways to interact:
-
-**App Home** — Open the agent in Slack and click the _Home_ tab. You'll see a welcome message with instructions on how to interact.
-
-**Direct Messages** — Open a DM with the agent. You'll see suggested prompts like _Write a Message_, _Summarize_, and _Brainstorm_ — pick one or type your own message. The agent replies in a thread. Send follow-up messages in the same thread and the agent will maintain the full conversation context.
-
-**Channel @mentions** — Invite the agent to a channel by typing `/invite @agent-name` in the message box, then @mention it followed by your message. The agent responds in a thread so the channel stays clean.
-
-**Assistant Panel** — Click _Add Agent_ in the top-right corner of Slack, select the agent from the list, then pick a suggested prompt or type a message.
-
-### Linting
-
-```sh
-# Run Biome for linting and formatting
-npm run lint
-
-# Auto-fix lint and format issues
-npm run lint:fix
-```
-
-### Testing
-
-```sh
-# Run unit tests
-npm test
-```
-
-## Project Structure
-
-### `manifest.json`
-
-`manifest.json` is a configuration for Slack apps. With a manifest, you can create an app with a pre-defined configuration, or adjust the configuration of an existing app.
-
-### `app.js`
-
-`app.js` is the entry point for the application and is the file you'll run to start the server. This project aims to keep this file as thin as possible, primarily using it as a way to route inbound requests.
-
-### `app-oauth.js`
-
-`app-oauth.js` is an alternative entry point that runs the app in HTTP mode instead of Socket Mode. This is intended for deployments that use OAuth for app distribution. See the OAuth HTTP Server section under Development for setup instructions.
-
-### `/listeners`
-
-Every incoming request is routed to a "listener". This directory groups each listener based on the Slack Platform feature used.
-
-**`/listeners/events`** — Handles incoming events:
-
-* `app-home-opened.js` — Publishes the App Home view with a welcome message and MCP status.
-* `app-mentioned.js` — Responds to @mentions in channels.
-* `message.js` — Responds to direct messages from users.
-* `assistant-thread-started.js` — Sets suggested prompts for assistant threads.
-
-**`/listeners/actions`** — Handles interactive components:
-
-* `feedback-buttons.js` — Handles thumbs up/down feedback on agent responses.
-
-**`/listeners/views`** — Builds Block Kit views:
-
-* `app-home-builder.js` — Constructs the App Home Block Kit view.
-* `feedback-builder.js` — Creates the feedback button block attached to responses.
-
-### `/agent`
-
-The `agent.js` file configures the Claude Agent SDK with a system prompt, tools registered via an MCP server, and a `runAgent()` async function that handles sending queries and collecting responses.
-
-Tools that need Slack API access (emoji reactions) are created as closures inside `runAgent()` that capture the dependencies. Add your own tools to customize the agent for your use case.
-
-### `/thread-context`
-
-The `store.js` file implements an in-memory session ID store, keyed by channel and thread. The Claude Agent SDK manages conversation history server-side via sessions, so only session IDs need to be tracked locally for resuming conversations. The store has TTL-based cleanup (24 hours) and a max entry limit (1000).
-
-## Troubleshooting
-
-### MCP Server connection error: `App is not enabled for Slack MCP server access`
-
-If you see an error like:
-
-```
-Error: Streamable HTTP error: Error POSTing to endpoint: {"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"App is not enabled for Slack MCP server access. Please enable it here: https://api.slack.com/apps/YOUR_APP_ID/app-assistant"}}
-```
-
-This means the Slack MCP feature has not been enabled for your app. There is no manifest property for this yet, so it must be toggled on manually:
-
-1. Run `slack app settings` to open your app's settings page (or visit [api.slack.com/apps](https://api.slack.com/apps) and select your app)
-2. Navigate to **Agents & AI Apps** in the left-side navigation
-3. Toggle **Slack Model Context Protocol** on
+Built for the Slack Agent Builder Challenge 2026.
