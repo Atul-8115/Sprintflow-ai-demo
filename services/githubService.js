@@ -19,7 +19,7 @@ const repo = process.env.GITHUB_REPO;
  */
 export async function getPullRequests() {
   const response = await github.get(
-    `/repos/${owner}/${repo}/pulls`
+    `/repos/${owner}/${repo}/pulls?state=all`
   );
 
   return response.data;
