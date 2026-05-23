@@ -1,3 +1,5 @@
+Dashboard analytics improvements
+
 # Starter Agent for Slack (Bolt for JavaScript and Claude Agent SDK)
 
 A minimal starter template for building AI-powered Slack agents with [Bolt for JavaScript](https://docs.slack.dev/tools/bolt-js/) and the [Claude Agent SDK](https://platform.claude.com/docs/en/agent-sdk/overview) using models from [Anthropic](https://www.anthropic.com). Works with the [Slack MCP Server](https://github.com/slackapi/slack-mcp-server) to search messages, read channels, send messages, and manage canvases — all from within your agent.
