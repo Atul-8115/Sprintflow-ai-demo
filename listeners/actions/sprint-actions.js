@@ -1,6 +1,8 @@
 import { generateResponse } from '../../gemini.js';
 import { generateAnalytics } from '../../utils/generateAnalytics.js';
 import { generateRisks } from '../../utils/generateRisks.js';
+import {getPullRequests,getIssues,getCommits,} from "../../services/githubService.js";
+import { generateEngineeringInsights } from "../../utils/generateEngineeringInsights.js";
 
 /**
  * Handle Generate Risks button
@@ -13,22 +15,55 @@ export async function handleGenerateRisks({
 }) {
   await ack();
 
-  // TEMP mock values
-  const blockers = 1;
-  const inProgress = 2;
+  try {
+    const prs = await getPullRequests();
+    const issues = await getIssues();
+    const commits = await getCommits();
 
-  const risks = generateRisks(
-    blockers,
-    inProgress
-  );
+    const risks = [];
 
-  await client.chat.postMessage({
-    channel: body.channel.id,
-    thread_ts: body.container.message_ts,
-    text:
-      `⚠️ *Potential Sprint Risks*\n\n` +
-      risks.map(risk => `• ${risk}`).join('\n'),
-  });
+    if (prs.length >= 4) {
+      risks.push(
+        "⚠️ Elevated pull request activity may slow review cycles."
+      );
+    }
+
+    if (issues.length >= 5) {
+      risks.push(
+        "⚠️ Growing issue backlog could impact sprint timelines."
+      );
+    }
+
+    if (commits.length <= 3) {
+      risks.push(
+        "⚠️ Low commit activity may indicate reduced sprint momentum."
+      );
+    }
+
+    if (risks.length === 0) {
+      risks.push(
+        "✅ No significant sprint delivery risks detected."
+      );
+    }
+
+    await client.chat.postMessage({
+      channel: body.channel.id,
+      thread_ts: body.container.message_ts,
+      text:
+        `⚠️ *Potential Sprint Risks*\n\n` +
+        risks.join("\n\n"),
+    });
+
+  } catch (error) {
+    console.error("Risk Analysis Error:", error);
+
+    await client.chat.postMessage({
+      channel: body.channel.id,
+      thread_ts: body.container.message_ts,
+      text:
+        "⚠️ Failed to generate sprint risks.",
+    });
+  }
 }
 
 /**
@@ -42,28 +77,58 @@ export async function handleViewDetails({
 }) {
   await ack();
 
-  // TEMP mock metrics
-  const completed = 2;
-  const inProgress = 2;
-  const blockers = 1;
+  try {
+    const prs = await getPullRequests();
+    const issues = await getIssues();
+    const commits = await getCommits();
 
-  const analytics = generateAnalytics(
-    completed,
-    inProgress,
-    blockers
-  );
+    const latestPR =
+      prs[0]?.title || "No PRs found";
 
-  await client.chat.postMessage({
-    channel: body.channel.id,
-    thread_ts: body.container.message_ts,
-    text:
-      `📊 *Detailed Sprint Analytics*\n\n` +
-      `• Team Velocity: ${analytics.velocity}\n` +
-      `• Sprint Forecast: ${analytics.forecast}\n` +
-      `• Risk Level: ${analytics.risk}\n` +
-      `• Active Contributors: ${analytics.contributors}\n` +
-      `• Open Pull Requests: ${analytics.prs}`,
-  });
+    const latestCommit =
+      commits[0]?.commit?.message
+        ?.split("\n")[0] || "No commits found";
+
+      const engineeringInsights =
+      generateEngineeringInsights({
+        prs: prs.length,
+        issues: issues.length,
+        commits: commits.length,
+        blockers: 1,
+      });
+
+    await client.chat.postMessage({
+      channel: body.channel.id,
+      thread_ts: body.container.message_ts,
+      text:
+        `📊 *Detailed Sprint Analytics*\n\n` +
+        `• Open Pull Requests: ${prs.length}\n` +
+        `• Open Issues: ${issues.length}\n` +
+        `• Recent Commits: ${commits.length}\n\n` +
+`━━━━━━━━━━━━━━\n\n` +
+
+        `🚀 *Latest Pull Request*\n` +
+        `• ${latestPR}\n\n` +
+`━━━━━━━━━━━━━━\n\n` +
+
+        `📝 *Latest Commit*\n` +
+        `• ${latestCommit}\n\n` +
+`━━━━━━━━━━━━━━\n\n` +
+
+        `🧠 *Engineering Insights*\n` +
+          engineeringInsights.join("\n")
+    });
+
+  } catch (error) {
+    console.error("GitHub Analytics Error:", error);
+
+    await client.chat.postMessage({
+      channel: body.channel.id,
+      thread_ts: body.container.message_ts,
+      text:
+        "⚠️ Failed to fetch GitHub analytics.",
+    });
+  }
 }
 
 /**
@@ -85,37 +150,38 @@ export async function handleSummarizeThread({
 
     // Combine all thread messages
     const threadText = replies.messages
-      .map(msg => msg.text || '')
-      .join('\n');
+    .filter(msg =>
+      !msg.bot_id &&
+      msg.text
+    )
+    .map(msg => msg.text)
+    .join('\n');
 
     // AI prompt
     const prompt = `
-        You are SprintFlow AI.
+        You are an engineering sprint assistant.
 
-        Summarize this engineering Slack discussion.
+        Analyze ONLY the provided Slack thread discussion.
 
-        STRICT FORMATTING RULES:
-        - Keep response concise
-        - Use professional engineering language
-        - Use emojis in section titles
-        - Use bullet points
-        - Keep formatting clean for Slack
+        Do NOT include unrelated repository risks,
+        GitHub metrics, or assumptions that are not
+        explicitly discussed in the thread.
 
-        FORMAT:
+        Use bullet points with the symbol "•"
+        instead of "-".
 
-        🚀 *Key Decisions*
-        • decision here
+        Provide:
 
-        ⚠️ *Risks / Blockers*
-        • blocker here
+        🚀 Key Decisions
+        ⚠️ Risks / Blockers
+        📌 Action Items
+        🧠 Final Summary
 
-        📌 *Action Items*
-        • action here
+        Keep the summary concise,
+        engineering-focused,
+        and operationally actionable.
 
-        📝 *Final Summary*
-        Short final summary here
-
-        Thread:
+        Thread Discussion:
         ${threadText}
     `;
 
