@@ -2,11 +2,8 @@ import { runAgent } from '../../agent/index.js';
 import { sessionStore } from '../../thread-context/index.js';
 import { buildFeedbackBlocks } from '../views/feedback-builder.js';
 import {
-  getPullRequests,
-  getIssues,
-  getCommits,
-} from "../../services/githubService.js";
-
+  buildEngineeringContext,
+} from "../../utils/buildEngineeringContext.js";
 /**
  * Handle app_mention events and run the agent.
  * @param {import('@slack/bolt').AllMiddlewareArgs & import('@slack/bolt').SlackEventMiddlewareArgs<'app_mention'>} args
@@ -45,70 +42,39 @@ export async function handleAppMentioned({ client, context, event, logger, say, 
     // Get session ID for conversation context
     const existingSessionId = sessionStore.getSession(channelId, threadTs);
 
-    // Fetch GitHub engineering context
-    const prs = await getPullRequests();
-    const issues = await getIssues();
-    const commits = await getCommits();
-
-    const prTitles = prs
-      .slice(0, 5)
-      .map((pr) => `• ${pr.title}`)
-      .join("\n");
-
-    const issueTitles = issues
-      .slice(0, 5)
-      .map((issue) => `• ${issue.title}`)
-      .join("\n");
-
-    const commitMessages = commits
-      .slice(0, 5)
-      .map(
-        (commit) =>
-          `• ${commit.commit.message}`
-      )
-      .join("\n");
+    const githubContext =
+      await buildEngineeringContext();
 
       const engineeringContext = `
-        You are SprintFlow AI, an engineering sprint copilot inside Slack.
+        You are SprintFlow AI, an engineering intelligence copilot inside Slack.
 
         User Question:
         ${cleanedText}
 
-        Engineering Context:
-
-        Open Pull Requests:
-        ${prTitles}
-
-        Open Issues:
-        ${issueTitles}
-
-        Recent Commits:
-        ${commitMessages}
+        ${githubContext}
 
         IMPORTANT RULES:
         - Answer ONLY the user's specific question
+        - Use holistic operational reasoning
+        - Combine engineering risks, release concerns, and momentum
         - NEVER generate generic sprint summaries
-        - NEVER generate sections like:
-          Completed work
-          In progress
-          Next steps
-        - Keep responses concise
-        - Use Slack-friendly formatting
+        - Use concise Slack-friendly formatting
+        - Use emoji section headings
         - Use bullet points with "•"
-        - Focus on operational engineering insights
-        - Mention specific engineering risks/issues when relevant
         - Keep response under 6 bullet points
-        - ALWAYS use emoji section headers
-        - ALWAYS start response with a heading
+        - Focus on engineering intelligence
+        - Mention specific operational concerns when relevant
         - NEVER return plain paragraphs
-        - NEVER use markdown headings like ##
-        - Avoid generic statements
-        - Mention specific repo issues when possible
+        - Summarize engineering issues semantically instead of copying GitHub titles
+        - Write like an engineering lead reporting operational concerns
+        - Infer broader engineering risks from low-level issues
+        - Avoid phrases like "Open Issue" or "Open Pull Request"
+        - Infer higher-level operational concerns from implementation-level issues
+        - Summarize engineering concerns as organizational risks, not ticket descriptions
 
         REQUIRED RESPONSE FORMAT:
 
         ⚠️ *Current Engineering Risks*
-        • point
         • point
         • point
 
@@ -124,9 +90,12 @@ export async function handleAppMentioned({ client, context, event, logger, say, 
         • point
         • point
 
-        Respond ONLY in one of the above Slack-friendly formats.
-      `;
+        OR
 
+        🧠 *Engineering Focus*
+        • point
+        • point
+    `;
     // Run the agent with deps for tool access
     const deps = { client, userId, channelId, threadTs, messageTs: event.ts, userToken: context.userToken };
     const { responseText, sessionId: newSessionId } =

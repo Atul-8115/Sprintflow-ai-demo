@@ -25,6 +25,12 @@
           "description": "Analyze release readiness and operational risks",
           "usage_hint": "Generate proactive engineering risk assessment",
           "should_escape": false
+        },
+        {
+          "command": "/engineering-focus",
+          "description": "Analyze current engineering focus areas",
+          "usage_hint": "Detect engineering priorities and momentum",
+          "should_escape": false
         }
     ],
     "app_home": {

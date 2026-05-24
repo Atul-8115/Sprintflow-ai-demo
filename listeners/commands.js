@@ -3,6 +3,7 @@ import { buildSummaryBlocks } from '../utils/buildSummaryBlocks.js';
 import { generateInsight } from '../utils/generateInsights.js';
 import { handleSprintInsights } from "./commands/sprintInsights.js";
 import { handleReleaseRisk } from "./commands/releaseRisk.js";
+import { handleEngineeringFocus } from "./commands/engineeringFocus.js";
 
 export default function registerCommands(app) {
   app.command('/daily-summary', async ({
@@ -38,5 +39,10 @@ export default function registerCommands(app) {
   app.command(
     "/release-risk",
     handleReleaseRisk
+  );
+
+  app.command(
+    "/engineering-focus",
+    handleEngineeringFocus
   );
 }
