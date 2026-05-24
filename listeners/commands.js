@@ -2,6 +2,7 @@ import { runAgent } from '../agent/agent.js';
 import { buildSummaryBlocks } from '../utils/buildSummaryBlocks.js';
 import { generateInsight } from '../utils/generateInsights.js';
 import { handleSprintInsights } from "./commands/sprintInsights.js";
+import { handleReleaseRisk } from "./commands/releaseRisk.js";
 
 export default function registerCommands(app) {
   app.command('/daily-summary', async ({
@@ -32,5 +33,10 @@ export default function registerCommands(app) {
   app.command(
     "/sprint-insights",
     handleSprintInsights
+  );
+
+  app.command(
+    "/release-risk",
+    handleReleaseRisk
   );
 }

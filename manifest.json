@@ -19,6 +19,12 @@
           "description": "Generate sprint intelligence and engineering insights",
           "usage_hint": "Analyze engineering activity and sprint health",
           "should_escape": false
+        },
+        {
+          "command": "/release-risk",
+          "description": "Analyze release readiness and operational risks",
+          "usage_hint": "Generate proactive engineering risk assessment",
+          "should_escape": false
         }
     ],
     "app_home": {
