@@ -1,9 +1,8 @@
 import { runAgent } from '../../agent/index.js';
 import { sessionStore } from '../../thread-context/index.js';
 import { buildFeedbackBlocks } from '../views/feedback-builder.js';
-import {
-  buildEngineeringContext,
-} from "../../utils/buildEngineeringContext.js";
+import { buildEngineeringContext } from "../../utils/buildEngineeringContext.js";
+import { getSprintMemory } from "../../memory/sprintMemory.js";
 /**
  * Handle app_mention events and run the agent.
  * @param {import('@slack/bolt').AllMiddlewareArgs & import('@slack/bolt').SlackEventMiddlewareArgs<'app_mention'>} args
@@ -42,6 +41,22 @@ export async function handleAppMentioned({ client, context, event, logger, say, 
     // Get session ID for conversation context
     const existingSessionId = sessionStore.getSession(channelId, threadTs);
 
+    const previousSprintMemory =
+    getSprintMemory(threadTs);
+
+    const formattedMemory =
+      previousSprintMemory
+        .map((memory, index) => `
+        Sprint Memory ${index + 1}:
+
+        Summary:
+        ${memory.summary}
+
+        Blockers:
+        ${memory.blockers.join(", ")}
+    `)
+        .join("\n");
+
     const githubContext =
       await buildEngineeringContext();
 
@@ -50,6 +65,9 @@ export async function handleAppMentioned({ client, context, event, logger, say, 
 
         User Question:
         ${cleanedText}
+
+        Previous Sprint Context:
+        ${formattedMemory || "No previous sprint context available"}
 
         ${githubContext}
 
@@ -71,6 +89,12 @@ export async function handleAppMentioned({ client, context, event, logger, say, 
         - Avoid phrases like "Open Issue" or "Open Pull Request"
         - Infer higher-level operational concerns from implementation-level issues
         - Summarize engineering concerns as organizational risks, not ticket descriptions
+        - Use previous sprint context only when relevant to the current question
+        - Identify ongoing versus newly introduced engineering concerns
+        - Prioritize recent sprint memory over older operational context
+        - Use sprint memory only when operationally relevant
+        - End responses cleanly without trailing phrases or incomplete thoughts
+        - Keep each bullet concise and operationally focused
 
         REQUIRED RESPONSE FORMAT:
 
@@ -96,6 +120,14 @@ export async function handleAppMentioned({ client, context, event, logger, say, 
         • point
         • point
     `;
+
+    console.log(
+    JSON.stringify(
+      previousSprintMemory,
+      null,
+      2
+    )
+  );
     // Run the agent with deps for tool access
     const deps = { client, userId, channelId, threadTs, messageTs: event.ts, userToken: context.userToken };
     const { responseText, sessionId: newSessionId } =

@@ -3,6 +3,7 @@ import { generateAnalytics } from '../../utils/generateAnalytics.js';
 import { generateRisks } from '../../utils/generateRisks.js';
 import {getPullRequests,getIssues,getCommits,} from "../../services/githubService.js";
 import { generateEngineeringInsights } from "../../utils/generateEngineeringInsights.js";
+import { saveSprintMemory } from "../../memory/sprintMemory.js";
 
 /**
  * Handle Generate Risks button
@@ -187,6 +188,29 @@ export async function handleSummarizeThread({
 
     // Generate AI summary
     const response = await generateResponse(prompt);
+
+    const blockersSection =
+      response.match(
+        /Risks \/ Blockers([\s\S]*?)📌|:pushpin:/i
+      );
+
+    const extractedBlockers =
+      blockersSection
+        ? blockersSection[1]
+            .match(/• .+/g)
+            ?.map(item =>
+              item.replace("• ", "")
+            ) || []
+        : [];
+
+        saveSprintMemory(
+          body.container.message_ts,
+          {
+            summary: response,
+            blockers: extractedBlockers,
+            timestamp: Date.now(),
+          }
+        );
 
     // Send result
     await client.chat.postMessage({
