@@ -203,14 +203,47 @@ export async function handleSummarizeThread({
             ) || []
         : [];
 
-        saveSprintMemory(
-          body.container.message_ts,
-          {
-            summary: response,
-            blockers: extractedBlockers,
-            timestamp: Date.now(),
-          }
+
+    const lowerThreadText =
+      threadText.toLowerCase();
+
+    const resolvedKeywords = [
+      "resolved",
+      "fixed",
+      "stabilized",
+      "completed",
+      "verified",
+      "closed"
+    ];
+
+    const resolvedConcerns =
+      resolvedKeywords.some(keyword =>
+        lowerThreadText.includes(keyword)
+      )
+        ? ["Previously reported issue resolved"]
+        : [];
+
+    const emergingConcerns = [];
+
+      if (
+        lowerThreadText.includes("new") ||
+        lowerThreadText.includes("detected") ||
+        lowerThreadText.includes("introduced")
+      ) {
+        emergingConcerns.push(
+          "New engineering concern detected"
         );
+      }
+    saveSprintMemory(
+      body.container.message_ts,
+      {
+        summary: response,
+        active: extractedBlockers,
+        resolved: resolvedConcerns,
+        emerging: emergingConcerns,
+        timestamp: Date.now(),
+      }
+    );
 
     // Send result
     await client.chat.postMessage({
