@@ -60,6 +60,9 @@ export async function buildOperationalContext(
         )
     ];
 
+    console.log("\n🚨 Active Before Filter");
+    console.log(activeConcerns);
+
   const resolvedConcerns =
     [
         ...new Set(
@@ -70,6 +73,17 @@ export async function buildOperationalContext(
             .map(normalizeConcern)
         )
     ];
+
+    console.log("\n✅ Resolved");
+    console.log(resolvedConcerns);
+
+  const filteredActiveConcerns =
+  activeConcerns.filter(
+    concern =>
+      !resolvedConcerns.includes(
+        concern
+      )
+  );
 
   const emergingConcerns =
     [
@@ -116,11 +130,12 @@ export async function buildOperationalContext(
     await buildEngineeringContext();
 
   return {
-    githubContext,
-    recentMemory,
-    historicalMemory,
-    activeConcerns: prioritizedActiveConcerns,
-    resolvedConcerns,
-    emergingConcerns,
-  };
+  githubContext,
+  recentMemory,
+  historicalMemory,
+  activeConcerns:
+    filteredActiveConcerns,
+  resolvedConcerns,
+  emergingConcerns,
+};
 }

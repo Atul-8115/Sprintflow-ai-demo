@@ -203,25 +203,52 @@ export async function handleSummarizeThread({
             ) || []
         : [];
 
+    const messages = replies.messages
+      .filter(msg =>
+        !msg.bot_id &&
+        msg.text
+      );
 
     const lowerThreadText =
       threadText.toLowerCase();
 
-    const resolvedKeywords = [
-      "resolved",
-      "fixed",
-      "stabilized",
-      "completed",
-      "verified",
-      "closed"
-    ];
+    const resolvedConcerns = [];
 
-    const resolvedConcerns =
-      resolvedKeywords.some(keyword =>
-        lowerThreadText.includes(keyword)
-      )
-        ? ["Previously reported issue resolved"]
-        : [];
+    for (const msg of messages) {
+
+      const text =
+        msg.text.toLowerCase();
+
+      if (
+        text.includes("redis") &&
+        (
+          /\bresolved\b/.test(text) ||
+          /\bverified\b/.test(text)
+        )
+      ) {
+        resolvedConcerns.push(
+          "Redis deployment instability"
+        );
+      }
+
+      if (
+        text.includes("android") &&
+        /\bresolved\b/.test(text)
+      ) {
+        resolvedConcerns.push(
+          "Android hydration regression"
+        );
+      }
+
+      if (
+        text.includes("playwright") &&
+        /\bverified\b/.test(text)
+      ) {
+        resolvedConcerns.push(
+          "Playwright verification"
+        );
+      }
+    }
 
     const emergingConcerns = [];
 
@@ -234,6 +261,22 @@ export async function handleSummarizeThread({
           "New engineering concern detected"
         );
       }
+
+      console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("💾 MEMORY ABOUT TO SAVE");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      console.log("Active:");
+      console.log(JSON.stringify(extractedBlockers, null, 2));
+
+      console.log("Resolved:");
+      console.log(JSON.stringify(resolvedConcerns, null, 2));
+
+      console.log("Emerging:");
+      console.log(JSON.stringify(emergingConcerns, null, 2));
+
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
     saveSprintMemory(
       body.container.message_ts,
       {
@@ -253,7 +296,17 @@ export async function handleSummarizeThread({
     });
 
   } catch (error) {
-    console.error('Thread Summary Error:', error);
+    console.error("\n━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("❌ THREAD SUMMARY ERROR");
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    console.error("Message:");
+    console.error(error?.message);
+
+    console.error("\nStack:");
+    console.error(error?.stack);
+
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     await client.chat.postMessage({
       channel: body.channel.id,

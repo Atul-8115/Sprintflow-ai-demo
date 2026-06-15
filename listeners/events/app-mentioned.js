@@ -4,6 +4,7 @@ import { buildFeedbackBlocks } from '../views/feedback-builder.js';
 import { buildEngineeringContext } from "../../utils/buildEngineeringContext.js";
 import { getSprintMemory } from "../../memory/sprintMemory.js";
 import { buildOperationalContext } from "../../utils/buildOperationalContext.js";
+import { prioritizeContext } from "../../utils/contextPrioritizer.js";
 /**
  * Handle app_mention events and run the agent.
  * @param {import('@slack/bolt').AllMiddlewareArgs & import('@slack/bolt').SlackEventMiddlewareArgs<'app_mention'>} args
@@ -51,191 +52,261 @@ export async function handleAppMentioned({ client, context, event, logger, say, 
       emergingConcerns,
     } = await buildOperationalContext(threadTs);
 
+    const prioritizedContext =
+      prioritizeContext(
+        cleanedText,
+        {
+          githubContext,
+          recentMemory,
+          historicalMemory,
+          activeConcerns,
+          resolvedConcerns,
+          emergingConcerns,
+        }
+      );
+
     console.log("Operational Context");
 
-    console.log("Active:", activeConcerns);
-    console.log("Resolved:", resolvedConcerns);
-    console.log("Emerging:", emergingConcerns);
+    console.log(
+      "Prioritized Context:",
+      prioritizedContext
+    );
 
     const activeBlockers =
       activeConcerns
         .filter(Boolean)
-        .slice(0, 5);
+        .slice(0, 5);  
 
     const recentSprintContext =
-            recentMemory
-              .map(memory => `
-          Summary:
-          ${memory.summary}
-
-          Active:
-          ${memory.active?.join(", ") || "None"}
-
-          Resolved:
-          ${memory.resolved?.join(", ") || "None"}
-
-          Emerging:
-          ${memory.emerging?.join(", ") || "None"}
-          `)
-              .join("\n");
-
-          const historicalSprintContext =
-            historicalMemory
-              .map(memory => `
-          Summary:
-          ${memory.summary}
-
-          Active:
-          ${memory.active?.join(", ") || "None"}
-
-          Resolved:
-          ${memory.resolved?.join(", ") || "None"}
-
-          Emerging:
-          ${memory.emerging?.join(", ") || "None"}
-        `)
+      recentMemory
+        .map(memory => memory.summary)
         .join("\n");
 
-      const engineeringContext = `
-        You are SprintFlow AI, an engineering intelligence copilot inside Slack.
+    const historicalSprintContext =
+      historicalMemory
+        .map(memory => memory.summary)
+        .join("\n");
 
-        User Question:
-        ${cleanedText}
+    const question = cleanedText.toLowerCase();
 
-        ACTIVE SPRINT BLOCKERS (Highest Priority):
-        ${activeBlockers.join("\n") || "No active blockers identified"}
+    let responseFormat = "";
 
-        RECENT SPRINT CONTEXT:
-        ${recentSprintContext || "No recent sprint context available"}
+    if (
+      question.includes("release") ||
+      question.includes("blocking")
+    ) {
+      responseFormat = `
+      STRICT RESPONSE MODE
 
-        HISTORICAL SPRINT CONTEXT:
-        ${historicalSprintContext || "No historical sprint context available"}
+      Return ONLY:
 
-        GITHUB ENGINEERING SIGNALS:
-        ${githubContext}
+      🚨 *Release Blockers*
+      • point
+      • point
 
-        Active Concerns:
-        ${activeConcerns.join(", ") || "None"}
+      Forbidden Sections:
+      - Completed work
+      - In progress
+      - Blockers
+      - Next steps
+      - Action items
+      - Sprint summaries
+      - Key decisions
+      `;
+    }
 
-        Resolved Concerns:
-        ${resolvedConcerns.join(", ") || "None"}
+    else if (
+      question.includes("risk")
+    ) {
+      responseFormat = `
+      STRICT RESPONSE MODE
 
-        Emerging Concerns:
-        ${resolvedConcerns.join(", ") || "None"}
+      Return ONLY:
 
-        MISSION:
-        Provide operational engineering intelligence, not issue summaries.
+      ⚠️ *Current Engineering Risks*
+      • point
+      • point
 
-        CONTEXT PRIORITY ORDER:
+      Forbidden Sections:
+      - Completed work
+      - In progress
+      - Next steps
+      - Action items
+      `;
+    }
 
-        1. User Question
-        2. Active Sprint Blockers
-        3. Recent Sprint Context
-        4. GitHub Engineering Signals
-        5. Historical Sprint Context
+    else if (
+      question.includes("momentum")
+    ) {
+      responseFormat = `
+      STRICT RESPONSE MODE
 
-        REASONING RULES:
+      Return ONLY:
 
-        - Answer ONLY the user's specific question
-        - Use operational reasoning instead of ticket-level descriptions
-        - Prioritize active blockers over GitHub activity
-        - Prioritize recent sprint context over historical context
-        - Use GitHub signals to validate concerns, not override sprint context
-        - Mention historical context only if still operationally relevant
-        - Resolve conflicting signals using severity and recency
-        - Prefer operational impact over implementation details
-        - Summarize concerns as organizational risks, not issue titles
-        - Focus on engineering execution, release confidence, stability, delivery velocity, and operational health
-        - Infer broader engineering concerns from low-level implementation issues
-        - Do not mention "Open Issue", "Pull Request", or GitHub ticket names unless absolutely necessary
-        - Keep responses concise and actionable
-        - Never return plain paragraphs
-        - Never generate generic sprint summaries
-        - Avoid repeating the same concern multiple times
-        - End responses cleanly
-        - Do not restate the same concern multiple times
-        - Merge related engineering concerns into a single risk
-        - Prefer 3-4 high-impact risks instead of many overlapping risks
-        - Each bullet must represent a unique operational concern
-        - Avoid rephrasing the same blocker in different ways
-        - Prefer sprint discussion evidence over repository-wide activity when answering operational questions
+      🚀 *Engineering Momentum*
+      • point
+      • point
 
-        TEMPORAL REASONING:
+      Rules:
+      - Discuss resolved concerns
+      - Discuss completed progress
+      - Never mark active blockers as completed
+      `;
+    }
 
-        - Treat partially resolved concerns as lower priority than active blockers
-        - Treat resolved concerns as historical context
-        - Do not elevate resolved concerns above active blockers
-        - Highlight emerging concerns when they introduce new release risk
-        - Prefer active concerns when assessing release readiness
-        - Mention resolved concerns only when discussing engineering momentum
-        - Do not report resolved concerns inside Release Blockers
-        - Mention resolved concerns only as supporting context
+    else if (
+      question.includes("focus")
+    ) {
+      responseFormat = `
+      STRICT RESPONSE MODE
 
-        Classify concerns as:
-        - Active
-        - Resolved
-        - Emerging
+      Return ONLY:
 
-        When analyzing engineering context:
-        - Do not report resolved concerns as active blockers
-        - Highlight newly emerging concerns when relevant
-        - Prioritize active concerns over historical concerns
-        - Reduce emphasis on partially resolved issues
+      🧠 *Engineering Focus*
+      • point
+      • point
 
-        QUESTION-SPECIFIC BEHAVIOR:
+      Rules:
+      - Describe engineering workstreams
+      - Not individual tickets
+      `;
+    }
+    `;`
 
-        For Release Readiness:
-        - Focus on blockers, regressions, validation gaps, stability concerns, and release confidence
+    console.log(
+  "\n🚀 MOMENTUM CONTEXT\n",
+  JSON.stringify(
+    prioritizedContext,
+    null,
+    2
+  )
+);
+    
+    const engineeringContext = `
+      You are SprintFlow AI, an engineering intelligence copilot inside Slack.
 
-        For Engineering Risks:
-        - Focus on operational risks, reliability concerns, architectural weaknesses, and delivery risks
+      
+      User Question:
+      ${cleanedText}
+      ${responseFormat}
 
-        For Engineering Momentum:
-        - Focus on progress, resolved blockers, delivery velocity, engineering execution, and release acceleration
+      Active Concerns:
+      ${prioritizedContext.activeConcerns.join(", ") || "None"}
 
-        For Engineering Focus:
-        - Identify dominant engineering themes and current priorities
+      Resolved Concerns:
+      ${prioritizedContext.resolvedConcerns.join(", ") || "None"}
 
-        For Release Blockers:
-        - Report only blockers that actively threaten release confidence or deployment stability
+      Emerging Concerns:
+      ${prioritizedContext.emergingConcerns.join(", ") || "None"}
 
-        FORMAT RULES:
+      ACTIVE SPRINT BLOCKERS (Highest Priority):
+      ${activeBlockers.join("\n") || "No active blockers identified"}
 
-        - Use Slack-friendly formatting
-        - Use emoji section headers
-        - Use bullet points with "•"
-        - Maximum 4 bullet points
-        - Prefer fewer high-signal insights over exhaustive lists
-        - Keep bullets concise
-        - Maintain executive-level tone
-        - Each bullet must describe a unique engineering concern
-        - Do not create summary bullets that simply restate previous risks
-        - Avoid generic risks like "delivery risk" or "operational risk" when specific blockers are available
+      RECENT OPERATIONAL SUMMARY:
+      ${recentSprintContext || "No recent sprint context available"}
 
-        REQUIRED RESPONSE FORMAT:
+      HISTORICAL SPRINT CONTEXT:
+      ${prioritizedContext.includeHistorical
+        ? historicalSprintContext
+        : "Historical context omitted"}
 
-        ⚠️ *Current Engineering Risks*
-        • point
-        • point
+      GITHUB ENGINEERING SIGNALS:
+      ${githubContext}
 
-        OR
 
-        🚨 *Release Blockers*
-        • point
-        • point
+      MISSION:
+      Provide operational engineering intelligence, not issue summaries.
 
-        OR
+      CONTEXT PRIORITY ORDER:
 
-        🚀 *Engineering Momentum*
-        • point
-        • point
+      1. User Question
+      2. Active Sprint Blockers
+      3. Recent Sprint Context
+      4. GitHub Engineering Signals
+      5. Historical Sprint Context
 
-        OR
+      REASONING RULES:
 
-        🧠 *Engineering Focus*
-        • point
-        • point
-        `;
+      - Answer ONLY the user's specific question
+      - Use operational reasoning instead of ticket-level descriptions
+      - Prioritize active blockers over GitHub activity
+      - Prioritize recent sprint context over historical context
+      - Use GitHub signals to validate concerns, not override sprint context
+      - Mention historical context only if still operationally relevant
+      - Resolve conflicting signals using severity and recency
+      - Prefer operational impact over implementation details
+      - Summarize concerns as organizational risks, not issue titles
+      - Focus on engineering execution, release confidence, stability, delivery velocity, and operational health
+      - Infer broader engineering concerns from low-level implementation issues
+      - Do not mention "Open Issue", "Pull Request", or GitHub ticket names unless absolutely necessary
+      - Keep responses concise and actionable
+      - Never return plain paragraphs
+      - Never generate generic sprint summaries
+      - Avoid repeating the same concern multiple times
+      - End responses cleanly
+      - Do not restate the same concern multiple times
+      - Merge related engineering concerns into a single risk
+      - Prefer 3-4 high-impact risks instead of many overlapping risks
+      - Each bullet must represent a unique operational concern
+      - Avoid rephrasing the same blocker in different ways
+      - Prefer sprint discussion evidence over repository-wide activity when answering operational questions
+      - Use only the context most relevant to the user's question
+      - Ignore unrelated context even if provided
+
+      TEMPORAL REASONING:
+
+      - Treat partially resolved concerns as lower priority than active blockers
+      - Treat resolved concerns as historical context
+      - Do not elevate resolved concerns above active blockers
+      - Highlight emerging concerns when they introduce new release risk
+      - Prefer active concerns when assessing release readiness
+      - Mention resolved concerns only when discussing engineering momentum
+      - Do not report resolved concerns inside Release Blockers
+      - Mention resolved concerns only as supporting context
+
+      Classify concerns as:
+      - Active
+      - Resolved
+      - Emerging
+
+      When analyzing engineering context:
+      - Do not report resolved concerns as active blockers
+      - Highlight newly emerging concerns when relevant
+      - Prioritize active concerns over historical concerns
+      - Reduce emphasis on partially resolved issues
+
+      QUESTION-SPECIFIC BEHAVIOR:
+
+      For Release Readiness:
+      - Prioritize Active Concerns and Emerging Concerns
+
+      For Engineering Momentum:
+      - Prioritize Resolved Concerns and Recent Progress
+      - Never infer completion.
+      - Only discuss concerns that appear in Resolved Concerns.
+
+      For Engineering Risks:
+      - Prioritize Active Concerns and Stability Signals
+
+      For Engineering Focus:
+      - Prioritize recurring themes across Recent Sprint Context
+
+      For Release Blockers:
+      - Report only blockers that actively threaten release confidence or deployment stability
+
+      FORMAT RULES:
+
+      - Use Slack-friendly formatting
+      - Use emoji section headers
+      - Use bullet points with "•"
+      - Maximum 4 bullet points
+      - Prefer fewer high-signal insights over exhaustive lists
+      - Keep bullets concise
+      - Maintain executive-level tone
+      - Each bullet must describe a unique engineering concern
+      - Do not create summary bullets that simply restate previous risks
+      - Avoid generic risks like "delivery risk" or "operational risk" when specific blockers are available
+      `;
 
     // Run the agent with deps for tool access
     const deps = { client, userId, channelId, threadTs, messageTs: event.ts, userToken: context.userToken };
